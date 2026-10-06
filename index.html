@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>SFF × Mastercard ideas picker</title>
+<style>
+  :root{--ink:#16181d;--ink2:#3c4148;--mut:#71777f;--faint:#9aa0a6;--line:#e7e7e4;--bg:#fbfbf9;--card:#fff;--ok:#3f7d58;--accent:#16181d;--rec:#b07a2b;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:120px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:48px 24px 0}
+  h1{font-size:27px;letter-spacing:-.02em;font-weight:650;margin-bottom:8px}
+  .lede{color:var(--ink2);font-size:15.5px;max-width:64ch;margin-bottom:6px}
+  .stamp{color:var(--faint);font-size:12.5px;margin-bottom:8px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);font-weight:650;margin:40px 0 4px;display:flex;align-items:baseline;gap:10px}
+  .ct{font-size:12px;color:var(--faint);letter-spacing:.02em;text-transform:none;font-weight:500}
+  .ct.full{color:var(--ok)}
+  .sub{color:var(--mut);font-size:13.5px;margin-bottom:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:15px 17px;margin-bottom:11px;cursor:pointer;transition:border-color .12s,box-shadow .12s;position:relative}
+  .card:hover{border-color:#cfd2cc}
+  .card.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+  .card.disabled{opacity:.45;cursor:not-allowed}
+  .row{display:flex;gap:13px;align-items:flex-start}
+  .tick{flex:none;width:22px;height:22px;border-radius:6px;border:1.5px solid #c4c4bf;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:.12s}
+  .radio .tick{border-radius:50%}
+  .tick svg{width:12px;height:12px;opacity:0;transition:.12s}
+  .card.sel .tick{background:var(--accent);border-color:var(--accent)}
+  .card.sel .tick svg{opacity:1}
+  .body{flex:1;min-width:0}
+  .name{font-weight:600;font-size:15px;letter-spacing:-.01em}
+  .name .rec{font-size:11px;color:var(--rec);font-weight:650;margin-left:8px}
+  .name .tag{font-size:11px;color:var(--ok);font-weight:650;margin-left:8px}
+  .meta{font-size:12.5px;color:var(--faint);font-family:ui-monospace,Menlo,monospace;margin:1px 0 6px}
+  .desc{font-size:13.5px;color:var(--ink2);line-height:1.5}
+  .desc b{color:var(--ink);font-weight:600}
+  .note{margin-top:11px;display:none}
+  .card.sel .note{display:block}
+  .note label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:600;display:block;margin-bottom:5px}
+  .note textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:13px/1.45 inherit;resize:vertical;min-height:34px;color:var(--ink);background:#fcfcfa}
+  .note textarea:focus{outline:none;border-color:var(--mut)}
+  .global{margin-top:20px}
+  .global label{font-size:13px;color:var(--mut);font-weight:600;display:block;margin-bottom:7px}
+  .global textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font:14px/1.5 inherit;resize:vertical;min-height:60px;background:var(--card)}
+  .global textarea:focus{outline:none;border-color:var(--mut)}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:rgba(251,251,249,.92);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:14px 24px}
+  .bar-in{max-width:880px;margin:0 auto;display:flex;align-items:center;gap:16px;justify-content:space-between}
+  .status{font-size:13px;color:var(--mut)} .status b{color:var(--ink)}
+  .btn{border:0;background:var(--ink);color:#fff;font:600 14px/1 inherit;padding:13px 22px;border-radius:10px;cursor:pointer;transition:.12s;white-space:nowrap}
+  .btn:disabled{background:#c8cdc6;cursor:not-allowed}
+  .btn.done{background:var(--ok)}
+  @media(max-width:620px){.wrap{padding:32px 16px 0}.bar-in{flex-direction:column;align-items:stretch;gap:10px}.btn{width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 id="title"></h1>
+  <p class="lede" id="intro"></p>
+  <p class="stamp" id="stamp"></p>
+  <div id="sections"></div>
+  <div class="global" id="globalWrap" style="display:none">
+    <label id="gnoteLabel"></label>
+    <textarea id="gnote"></textarea>
+  </div>
+</div>
+<div class="bar"><div class="bar-in">
+  <div class="status" id="status"></div>
+  <button class="btn" id="copy" disabled>Copy prompt</button>
+</div></div>
+<script>
+const DECK = {
+  title: "SFF × Mastercard: ideas picker",
+  intro: "Two lanes Angela opened up. Lane 1 is the agentic commerce demo on Mastercard's stage (their build, our card, our story). Lane 2 is executive video content shot at SFF across both booths. Tick what should go into the pitch to Sylvia, Xiaoyi and Clara. Stack freely, most demos will be two or three of these combined.",
+  stamp: "Prepared 6 Oct 2026 · for the 8 Oct working call · owner Steven, content Joshua, PR Xiaoyi and Sylvia",
+  promptHeader: "sff_mastercard picks",
+  promptAction: "Build the one-page pitch for Sylvia and Xiaoyi from these picks, then draft the reply to Angela.",
+  globalNote: { label: "Anything else (optional)", placeholder: "exec preferences, red lines, things Angela must confirm first..." },
+  sections: [
+    { key:"demo", label:"Lane 1 · How the demo could look", sub:"Mastercard owns the slot and the flow. These are shapes for the WorldFirst section inside it. Suggest 3, they stack.", pick:3, notes:true,
+      items:[
+        {name:"A month in the life", meta:"timelapse · 90s · needs one real seller", desc:"A Shenzhen seller's agent buys tokens across five AI services through the month, metered live, settled on one World Card at month end. The seller voices it. <b>Demo and customer story in one.</b>"},
+        {name:"Agent vs manual, split screen", meta:"split screen · 60s · no integration needed", desc:"Left: founder juggling six subscriptions, a declined card, FX fees. Right: one World Card, one mandate, one bill. <b>Easiest to understand from the back of the room.</b>"},
+        {name:"The live issue", meta:"on stage · 20s · needs sandbox", desc:"Clara approves a mandate on her phone, a World Card issues in real time, the agent pays within seconds. The wow moment. <b>Only works if product confirms the demo environment is real.</b>"},
+        {name:"The cap", meta:"control beat · 30s", desc:"SME sets a $500 monthly limit on AI spend. The agent tries to go over. Agent Pay stops it. <b>Trust is the thing every founder actually worries about.</b>", rec:true},
+        {name:"Listing to launch", meta:"workflow · 2 min", desc:"Agent uses AI services to translate listings, generate ad creatives and localise pricing for a new market, paying per use on the card. <b>Ties agentic spend to a real seller job instead of abstract tokens.</b>"},
+        {name:"Pay USD from a CNY balance", meta:"FX layer · 45s · WorldFirst only", desc:"Agent pays American AI vendors from a seller who holds CNY and SGD in their WorldFirst account. <b>The one thing nobody else in that room can show.</b>", rec:true},
+        {name:"Customer on stage", meta:"live · 60s · hardest to produce", desc:"A Singapore seller joins for a minute, approves the mandate themselves, says why they'd let an agent hold their card. <b>Highest credibility, needs a client willing to stand up.</b>"},
+        {name:"The receipt", meta:"closing visual · 15s", desc:"Whole demo builds to one reveal: a consolidated statement showing 14 services, one line, one card. <b>Simplest visual, easiest to clip for social.</b>", rec:true},
+        {name:"Default funding", meta:"placement · persistent", desc:"Inside the token aggregator, WorldFirst is the pre-set funding source, co-branded. <b>Lives in every run of Mastercard's demo, not just the SFF one.</b>"},
+        {name:"Two booths, one transaction", meta:"stunt · needs both booth teams", desc:"Mandate starts on the Ant International booth screen, settlement lands on the Mastercard booth screen. <b>Gives Angela's booth-coordination idea a reason to exist.</b>"}
+      ]},
+    { key:"story", label:"Lane 1b · The agentic-ready VCC story", sub:"Angela left this undefined. Pick the shape we propose. Suggest 1.", pick:1, notes:true,
+      items:[
+        {name:"Customer story", meta:"owned + Mastercard channels · no product claim", desc:"A real WorldFirst seller already paying AI and ad bills on World Card, told as agentic spend is already here, it just isn't automated yet. <b>Becomes the demo persona, the demo video narrative and a standalone piece. One story, three outputs.</b>", rec:true},
+        {name:"PR announcement", meta:"press · needs product, legal, Ant comms", desc:"World Card among the first SME cards ready for Mastercard Agent Pay. <b>Strongest headline, but it is a product claim and Ant International has its own agentic narrative at SFF.</b>"},
+        {name:"Joint POV piece", meta:"co-authored article · lowest risk", desc:"What agentic commerce means for cross-border SMEs, bylined by both companies. <b>Safe, publishable anywhere, least likely to be remembered.</b>"}
+      ]},
+    { key:"video", label:"Lane 2 · How the exec video content could look", sub:"Shot at SFF, interview room at either booth, both execs present. Suggest 3.", pick:3, notes:true,
+      items:[
+        {name:"Exec fireside", meta:"2 execs · 8 to 10 min · interview room", desc:"Clara with a Mastercard senior lead on what changes for an SME when the agent holds the card. One long LinkedIn piece plus four or five short clips. <b>The anchor asset.</b>", rec:true},
+        {name:"Question swap", meta:"rapid fire · 5 min · clips", desc:"Clara asks Mastercard five questions, Mastercard asks WorldFirst five back. Fast, unscripted feel, every answer is a standalone clip. <b>Gets the testimonials and the questions-back in one sitting.</b>", rec:true},
+        {name:"Booth to booth walk", meta:"phone-shot · 2 min · casual", desc:"One WorldFirst person walks from the Ant International booth to the Mastercard booth, meets their team, sees the demo. <b>Cheap, feels live, and makes the two booths one story.</b>"},
+        {name:"Singapore SMEs on the floor", meta:"vox pops · 3 to 4 sellers · Joshua", desc:"Real sellers at SFF asked what they'd let an AI agent spend on. A Mastercard rep appears in one. <b>The only format where the ICP speaks, not us.</b>", rec:true},
+        {name:"Demo explainer", meta:"screen capture · 60 to 90s · product voice", desc:"The Agent Pay flow with a World Card, voiced by our product person. <b>Reusable long after SFF, feeds sales decks and the website.</b>"},
+        {name:"Stage capture", meta:"multi-cam · 3 min highlight", desc:"Record the demo slot itself properly, not on a phone, and cut a highlight with Clara on the Mastercard stage. <b>The proof asset for PR and internal.</b>"},
+        {name:"Roundtable with a seller", meta:"3 chairs · 15 min · VIP room", desc:"Clara, a Mastercard exec and one Singapore seller. The seller asks, the execs answer. <b>Harder to book, but the seller keeps it honest.</b>"},
+        {name:"Endorsement clip", meta:"Mastercard exec · 45s · single camera", desc:"Why Mastercard picked WorldFirst as the issuer, straight to camera. <b>Pure brand endorsement for LinkedIn, sales and the website.</b>"},
+        {name:"Vertical sit-down", meta:"9:16 · 3 questions each · Reels", desc:"Single camera, vertical, three questions to each exec, cut into three 60s verticals. <b>Built for Reels and TikTok, not repurposed from landscape.</b>"},
+        {name:"Behind the scenes", meta:"Stories · rehearsal and live moment", desc:"Setup, rehearsal, the moment the card issues live, the two teams together. <b>Stories and Reels fodder, costs nothing extra on the day.</b>"}
+      ]},
+    { key:"topics", label:"Lane 2 · Conversation themes", sub:"What the execs actually talk about. Angela leans agentic commerce, we can widen it. Suggest 2.", pick:2, notes:true,
+      items:[
+        {name:"SMEs are the first real users of agentic commerce", meta:"agentic · our angle", desc:"Not consumers. Cross-border sellers already automate ads, listings and sourcing, the card is the missing piece.", rec:true},
+        {name:"Who holds the risk when the agent holds the card", meta:"agentic · trust", desc:"Issuer, network or SME. The question every CFO will ask, answered by both brands together.", rec:true},
+        {name:"Why Mastercard picked WorldFirst", meta:"partnership", desc:"What a network looks for in an issuer partner for new rails, and what WorldFirst does for SMEs that others don't."},
+        {name:"Cards replacing bank transfers for digital spend", meta:"product", desc:"Ads, AI, SaaS, marketplaces. Why the SME wallet is moving to card rails and what that means for FX."},
+        {name:"Singapore as the launch pad for Chinese sellers", meta:"regional", desc:"Why sellers set up in Singapore to go global, and what the two brands can do for them there."},
+        {name:"What SMEs will need from issuers in two years", meta:"forward look", desc:"Mastercard's Agent Pay roadmap in APAC and what WorldFirst builds toward it."}
+      ]}
+  ]
+};
+
+const CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+/* No hard caps: every section is free multi-select. `pick` is a SUGGESTED count only. */
+const state={}, notes={};
+DECK.sections.forEach(s=>{ state[s.key]= new Set(); notes[s.key]={}; });
+
+document.getElementById('title').textContent=DECK.title||'Deck';
+document.getElementById('intro').textContent=DECK.intro||'';
+document.getElementById('stamp').textContent=DECK.stamp||'';
+if(DECK.globalNote){ document.getElementById('globalWrap').style.display='block';
+  document.getElementById('gnoteLabel').textContent=DECK.globalNote.label||'Notes';
+  document.getElementById('gnote').placeholder=DECK.globalNote.placeholder||''; }
+
+const root=document.getElementById('sections');
+DECK.sections.forEach(s=>{
+  const h=document.createElement('h2'); h.innerHTML=`${s.label} <span class="ct" id="ct-${s.key}"></span>`; root.appendChild(h);
+  if(s.sub){ const p=document.createElement('p'); p.className='sub'; p.textContent=s.sub; root.appendChild(p); }
+  const box=document.createElement('div'); box.id='sec-'+s.key; root.appendChild(box);
+  s.items.forEach((o,i)=> box.appendChild(card(s,i,o)));
+});
+
+function card(s,i,o){
+  const el=document.createElement('div'); el.className='card'+(s.mode==='single'?' radio':''); el.dataset.k=s.key; el.dataset.i=i;
+  const rec=o.rec?'<span class="rec">★ rec</span>':'';
+  const tag=o.tag?`<span class="tag">${o.tag}</span>`:'';
+  const meta=o.meta?`<div class="meta">${o.meta}</div>`:'';
+  const note=s.notes?`<div class="note"><label>your note (optional)</label><textarea placeholder="note on this pick..."></textarea></div>`:'';
+  el.innerHTML=`<div class="row"><div class="tick">${CHECK}</div><div class="body"><div class="name">${o.name}${rec}${tag}</div>${meta}<div class="desc">${o.desc||''}</div>${note}</div></div>`;
+  el.addEventListener('click',e=>{ if(e.target.tagName==='TEXTAREA')return; toggle(s,i,el); });
+  const ta=el.querySelector('textarea'); if(ta){ ta.addEventListener('click',e=>e.stopPropagation()); ta.addEventListener('input',e=>{ notes[s.key][i]=e.target.value; }); }
+  return el;
+}
+function toggle(s,i,el){
+  const set=state[s.key];
+  if(set.has(i)){ set.delete(i); el.classList.remove('sel'); }
+  else { set.add(i); el.classList.add('sel'); }
+  update();
+}
+function selCount(s){ return state[s.key].size; }
+function totalCount(){ return DECK.sections.reduce((t,s)=>t+selCount(s),0); }
+function update(){
+  DECK.sections.forEach(s=>{ const c=document.getElementById('ct-'+s.key); c.textContent=`suggest ${s.pick} · ${selCount(s)} selected`; c.className='ct'+(selCount(s)>0?' full':''); });
+  const total=totalCount(); const btn=document.getElementById('copy'); btn.disabled=total===0; btn.classList.remove('done'); btn.textContent='Copy prompt';
+  document.getElementById('status').innerHTML = total===0
+    ? 'Select anything. No limits, the prompt carries whatever you pick.'
+    : `<b>${total}</b> pick${total===1?'':'s'} in the prompt. Suggested counts are guidance only.`;
+}
+function buildPrompt(){
+  let L=['== '+(DECK.promptHeader||'deck')+' =='];
+  DECK.sections.forEach(s=>{
+    if(selCount(s)===0) return;
+    L.push(`${s.label} (${selCount(s)} picked, ${s.pick} suggested):`);
+    [...state[s.key]].forEach((i,n)=>{ const o=s.items[i]; const nt=notes[s.key][i]?` [note: ${notes[s.key][i].trim()}]`:''; L.push(`  ${n+1}. ${o.name}${nt}`); });
+  });
+  const g=DECK.globalNote? document.getElementById('gnote').value.trim():'';
+  if(g) L.push('NOTES: '+g);
+  L.push('> Counts are my call, work with exactly what I ticked.');
+  if(DECK.promptAction) L.push('> '+DECK.promptAction);
+  return L.join('\n');
+}
+document.getElementById('copy').addEventListener('click',async()=>{
+  const txt=buildPrompt();
+  try{ await navigator.clipboard.writeText(txt); }catch(e){ const ta=document.createElement('textarea'); ta.value=txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+  const b=document.getElementById('copy'); b.classList.add('done'); b.textContent='Copied · paste it to Claude'; setTimeout(()=>{ if(!b.disabled){b.classList.remove('done'); b.textContent='Copy prompt';} },2600);
+});
+update();
+</script>
+</body>
+</html>
